@@ -1,0 +1,111 @@
+html {
+	overflow-y: scroll;
+}
+
+body {
+	background-color: #f0f0f0;
+}
+
+.navbar {
+	border-radius: 0px;
+	margin-bottom: 0px;
+}
+
+@media (min-width: 1200px) {
+    .container.custom-width {
+        max-width: 1080px;
+    }
+}
+
+.main-text {
+	padding: 20px 15px;
+	text-align: center;
+}
+.about-text, .contact-text{
+	padding: 40px 15px;
+}
+
+#mynetwork {
+	background-color: white;
+	text-align: center;
+	width: 100%;
+	height: 520px;
+	border: 2px solid gray;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+#footer {
+	text-align: center;
+	padding: 20px 20px;
+}
+
+#tags_uni, #tags_major{
+     width: 40%;
+	margin-right: 5px;
+	margin-bottom: 3px;
+}
+
+#loadNetworkDiv, #saveNetworkDiv{      
+     text-align: center;
+}
+
+#newUniversityText{
+}
+
+.modal {
+	text-align: center;
+}
+
+@media screen and (min-width: 768px) { 
+  .modal:before {
+    display: inline-block;
+    vertical-align: middle;
+    content: " ";
+    height: 100%;
+  }
+}
+
+.modal-dialog {
+  display: inline-block;
+  text-align: left;
+  vertical-align: middle;
+}
+
+hr {
+	color: grey;
+	height: 1px;
+	background-color: grey;
+}
+
+#layoutButtons{
+	text-align: center;
+}
+
+.navbar-brand{
+	font-size: 20pt;
+}
+
+#options2{
+	width: 1050px;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+label.col-sm-2.control-label {
+	text-align: left;
+}
+
+#pasteSubmit{
+	font-size: 16pt;
+	margin-left: 50px;
+	margin-top: 10px;
+}
+
+.about-text, .contact-text{
+	margin-top: 50px;
+}
+
+div#submitDiv.col-md-4{
+	padding-left: 30px;
+}

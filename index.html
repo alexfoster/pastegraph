@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="author" content="Alex Foster">
+<meta name="description" content="pastegraph">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pastegraph</title>
+
+<!-- ALWAYS USE CDN SRC -->
+
+<link rel="icon" type="image/png" href="http://www.0xadf.com/pastegraph/img/02-512.png">
+<!-- visjs, jquery -->
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.2.0/vis.min.js"></script>
+<script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.2.0/vis.min.css" rel="stylesheet" type="text/css" />
+
+<!-- bootstrap must come before jquery ui-->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+
+<!-- jquery -->
+<link href="https://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css" rel="stylesheet" type="text/css" />
+<script src="https://code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+
+<!-- my css -->
+<link rel="stylesheet" type="text/css" href="http://www.0xadf.com/pastegraph/css/pastestyle.css" />
+
+<!-- recaptcha -->
+<script src='//www.google.com/recaptcha/api.js'></script>
+
+</head>
+<body>
+<script type="text/javascript">
+	var nodeDataSet;	// in-memory store of nodes
+	var edgeDataSet;	// in-memory store of edges
+	var dataSetOptions;
+	var nodeDataGlobal;	// used for editing node name
+	var editCallback;   // used for editing node name
+	var network;
+
+	var captchaString;
+
+	var defaultNetwork = function(){	
+		console.log("make default network");
+		$("#title-text").text("Create a graph visualization and share!");
+		dataSetOptions = {fieldId: "id"};
+		nodeDataSet = new vis.DataSet(dataSetOptions);
+		nodeDataSet.add([{id: 'ajdfakjdf', label: 'Node 1'}]);
+		nodeDataSet.add([{id: 'fdjakfa', label: 'Node 2'}]);
+		edgeDataSet = new vis.DataSet();
+		edgeDataSet.add([{from: 'ajdfakjdf', to: 'fdjakfa'}]);
+		createNetwork(false, "UD");		
+	}
+	
+	// save network to database
+	var saveNetwork = function(){
+		var hierarchy;
+		var expiration;
+		var exposure;
+		var title;
+		var LRButton = document.getElementById("hierarchicalLR");
+		var TDButton = document.getElementById("hierarchicalUD");
+		var freeFormButton = document.getElementById("freeform");
+		
+		if(LRButton.className == 'btn btn-primary'){
+			hierarchy = "LR";
+		}
+		else if(TDButton.className == 'btn btn-primary'){
+			hierarchy = "UD";
+		}
+		else {
+			hierarchy = "freeform";
+		}
+
+		var expirationSelect = document.getElementById("pasteExpiration");
+		var exposureSelect = document.getElementById("pasteExposure");
+		expiration = expirationSelect.options[expirationSelect.selectedIndex].text;
+		exposure = exposureSelect.options[exposureSelect.selectedIndex].text;
+
+		title = document.getElementById("pasteTitle").value;
+		if(title === ""){
+			title = "Untitled";
+		} 
+
+		var optionsObject = {hierarchy: hierarchy, exposure: exposure, expiration: expiration, title: title, captcha: captchaString};
+		var dataObject = {nodes: nodeDataSet._data, edges: edgeDataSet._data, options: optionsObject};
+		$.ajax({
+			url: 'http://www.0xadf.com/dataSave.php',
+			data: dataObject, 
+			dataType: 'text',
+			method: 'POST',
+			success: function(ajaxData){
+				console.log(ajaxData);
+				$("#title-text").text(title);
+				window.history.pushState("page2", "title", "/pastegraph/"+ajaxData);
+				window.scrollTo(0,0);
+				captchaString = "";
+				grecaptcha.reset();		
+			},
+			error: function(jqXHR, textStatus, errorThrown){
+				alert("Failed to paste. We are looking into this.");
+				console.log("Error in save network: "+textStatus+", "+errorThrown);
+			}
+		});
+	}
+
+	var loadNetwork = function(pasteId){
+		console.log("loading network: "+pasteId);
+
+		var dataSetOptions = {fieldId: "id"};
+		nodeDataSet = new vis.DataSet(dataSetOptions);
+		edgeDataSet = new vis.DataSet(dataSetOptions);
+
+		var dataObject = {id: pasteId};
+		$.ajax({
+			url: 'http://www.0xadf.com/dataLoad.php',
+			data: dataObject, 
+			dataType: 'json',
+			method: 'POST',
+			success: function(ajaxData){
+				if(ajaxData.length == 0){
+					defaultNetwork();
+					return;
+				}
+				var hierarchy = "freeform";
+				var hierarchical = false;
+				var expiration = "Never";
+				var exposure = "Private";
+				var title = "Untitled";
+				for(var i=0; i<ajaxData.length; i++){
+					console.log(ajaxData[i].id + ", "+ajaxData[i].type+", "+ajaxData[i].nodeName+", "+
+							ajaxData[i].fromNode + ", "+ajaxData[i].toNode.trim()+"\n");
+					if(ajaxData[i].type == "node"){
+						nodeDataSet.add([{id: ajaxData[i].id, label: ajaxData[i].nodeName}]);
+					}
+					else if(ajaxData[i].type == "edge"){
+						edgeDataSet.add([{id: ajaxData[i].id, from: ajaxData[i].fromNode, 
+							to: ajaxData[i].toNode}]);
+					}
+					else if(ajaxData[i].type == "option" && ajaxData[i].id == "hierarchy"){
+						hierarchy = ajaxData[i].nodeName;	
+					}
+					else if(ajaxData[i].type == "option" && ajaxData[i].id == "expiration"){
+						expiration = ajaxData[i].nodeName;
+					}
+					else if(ajaxData[i].type == "option" && ajaxData[i].id == "exposure"){
+						exposure = ajaxData[i].nodeName;
+					}
+					else if(ajaxData[i].type == "option" && ajaxData[i].id == "title"){
+						title = ajaxData[i].nodeName;
+					}
+				}
+				if(hierarchy == "LR"){
+					document.getElementById("hierarchicalLR").className = "btn btn-primary";
+					document.getElementById("freeform").className = "btn btn-default";	
+					hierarchical = true;
+				}
+				else if(hierarchy == "UD"){
+					document.getElementById("hierarchicalUD").className = "btn btn-primary";
+					document.getElementById("freeform").className = "btn btn-default";
+					hierarchical = true;
+				}
+				else if(hierarchy == "freeform"){
+					hierarchical = false;
+				}
+				$("#pasteExposure option").filter(function(){
+					return $(this).text() == exposure;
+				}).prop('selected', true);
+				$("#pasteExpiration option").filter(function(){
+					return $(this).text() == expiration;
+				}).prop('selected', true);
+				$("#pasteTitle").val(title);		
+				$("#title-text").text(title);
+				createNetwork(hierarchical, hierarchy); 
+			},
+			error: function(jqXHR, textStatus, errorThrown){
+				console.log("Error in load network: "+textStatus+", "+errorThrown);
+				defaultNetwork();
+			}
+		});
+	
+	}
+
+	var createNetwork = function(hierarchical, direction){
+    		var container = document.getElementById('mynetwork');
+		// build data for network
+		var data = {
+					nodes: nodeDataSet,
+					edges: edgeDataSet
+				 };	
+		// build options for network 
+		var options = buildOptions(hierarchical, direction);
+		// initialize the network
+		network = new vis.Network(container, data, options);
+	}
+
+	var buildOptions = function(hierarchical, direction){
+		if(!hierarchical){
+			direction = "UD";
+		}
+		var options = {
+			layout:{
+				hierarchical: {
+					enabled: hierarchical,
+					levelSeparation: 150, 
+					direction: direction,
+					sortMethod: 'directed'
+				}
+			},
+			nodes:{
+				font: '16px arial',
+				shadow: {
+					size: 12,
+				}
+			},
+			interaction:{
+				dragNodes: true,
+				dragView: true,
+				multiselect: true,
+				navigationButtons: true, 
+			},
+			physics:{
+				enabled: true,
+				maxVelocity: 25,
+				hierarchicalRepulsion: {
+					centralGravity: 0.5
+				},
+			},
+			manipulation: {
+				enabled: true,
+				initiallyActive: true,
+				addNode: function(nodeData,callback) {
+					callback(nodeData);
+				},
+				editNode: function(nodeData,callback) { 
+					nodeDataGlobal = nodeData;
+					editCallback = callback;
+					document.getElementById("editInput").value = "";
+					$("#dialog").dialog("open");
+					document.getElementById("editInputSubmit").removeEventListener("click", editVisNode);
+					document.getElementById("editInputSubmit").addEventListener("click", editVisNode);
+				},
+				deleteNode: function(nodeData,callback){ 
+					callback(nodeData);
+				},
+				addEdge: function(edgeData,callback){	
+					callback(edgeData);
+				},
+				editEdge: function(edgeData,callback){
+					callback(edgeData);
+				},
+				deleteEdge: function(edgeData,callback){ 
+					callback(edgeData);
+				}
+			}
+		};
+		return options;
+	}
+
+	// handle editing of node 	
+	var editVisNode = function(){
+		var newNodeData = document.getElementById("editInput").value;	
+		if(newNodeData != ""){
+			// get id of node we are editing. should handle duplicates properly. 
+			var nodeId = network.getSelectedNodes()[0];	
+			// update actual node in dataset with new node name
+			nodeDataSet.update({id: nodeId, label: newNodeData});
+			// update vis node
+			nodeDataGlobal.label = newNodeData;
+			$("#dialog").dialog("close");
+		}
+	}
+
+	var memorySetToString = function(){
+		var i;
+		var fullString = "Nodes: \n";
+		var nodeKeys = nodeDataSet.getIds();
+		var edgeKeys = edgeDataSet.getIds();
+		for(i in nodeKeys){
+			if(nodeDataSet.get(nodeKeys[i]) != null){
+				fullString += nodeDataSet.get(nodeKeys[i]).id+" "+
+							nodeDataSet.get(nodeKeys[i]).label+"\n";
+			}
+		}
+		fullString+="Edges: \n";
+		for(i in edgeKeys){
+			if(edgeDataSet.get(edgeKeys[i]) != null){
+				fullString += edgeDataSet.get(edgeKeys[i]).from+" "+
+							edgeDataSet.get(edgeKeys[i]).to+"\n";
+			}
+		}
+		return fullString;
+	}
+	
+	// called whenever an uncaught error occurs. NOT WORKING, GO LEARN ABOUT POSTFIX/SENDMAIL CONFIG
+	var mailAdmin = function(msg, url, line, col, error){
+		var extra = !col ? '' : '\ncolumn: ' + col;
+		extra += !error ? '' : '\nerror: ' + error;
+		var message = "Error: "+msg+"\nurl: "+url+"\nline: "+line+extra;
+		var errorMessage = {message: message};
+		$.ajax({
+			url: 'http://www.0xadf.com/mailAdmin.php',
+			data: errorMessage,
+			dataType: 'html',
+			method: 'POST',
+			success: function(data){
+				console.log("success: "+data);
+			},
+			error: function(jqXHR, textStatus, errorThrown){
+				console.log("error: "+jqXHR+", "+textStatus+", "+errorThrown);
+			}
+		});	
+	}
+
+	// save recaptcha client response to global
+	var verifyRecaptcha = function(g_recaptcha_response){
+		captchaString = g_recaptcha_response;	
+	}
+	
+	$(document).ready(function(){
+		var LRButton = document.getElementById("hierarchicalLR");
+		var TDButton = document.getElementById("hierarchicalUD");
+		var freeFormButton = document.getElementById("freeform");
+		$('#hierarchicalLR').click(function(){
+			LRButton.className = 'btn btn-primary';
+			TDButton.className = 'btn btn-default';
+			freeFormButton.className = 'btn btn-default';
+			createNetwork(true, "LR");
+		});
+		$('#hierarchicalUD').click(function(){
+			LRButton.className = 'btn btn-default';
+			TDButton.className = 'btn btn-primary';
+			freeFormButton.className = 'btn btn-default';
+			createNetwork(true, "UD");
+		});
+		$('#freeform').click(function(){
+			LRButton.className = 'btn btn-default';
+			TDButton.className = 'btn btn-default';
+			freeFormButton.className = 'btn btn-primary';
+			createNetwork(false, "freeform");
+		});
+
+		window.onerror = function(msg, url, line, col, error) {
+			//send me an email
+			alert("Unexpected error. We are looking into this.");
+			mailAdmin(msg, url, line, col, error);
+		}
+		$('html').keyup(function(e){
+			if(network != null){
+				if(e.keyCode == 13){
+					
+					$("#editInputSubmit").click();
+				}
+				else if(e.keyCode == 46) {		// delete key
+					network.deleteSelected();
+				}
+				else if(e.keyCode == 107) {	// + key
+					network.addNodeMode();
+				}
+				else if(e.keyCode == 106) {	// * key
+					network.editNode();
+				}
+			}
+		});
+		$("#dialog").dialog({
+		    autoOpen: false,
+		    show: false,
+		    hide: false,
+		    draggable: false,
+		    resizable: false,
+		    close: function(event, ui) {
+				editCallback(nodeDataGlobal);
+		    }
+		});
+		$("#pasteSubmit").click(function() {
+			if(typeof captchaString !== 'undefined' && captchaString.length > 0){
+				saveNetwork();
+			}
+			else{
+				//hint
+			}
+		});
+		// parse url
+		var URL = window.location.pathname;
+		console.log("pathname:"+URL); 
+		var pasteId = URL.replace("/pastegraph/", "");
+		var parsedId = encodeURIComponent(pasteId);
+		if(parsedId.length == 12){	
+			loadNetwork(parsedId);
+		}
+		else{
+			defaultNetwork();
+		}
+	});
+</script>
+
+<nav class="navbar navbar-inverse">
+ <div class="container custom-width">
+   <div class="navbar-header">
+	<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+	  <span class="sr-only">Toggle navigation</span>
+	  <span class="icon-bar"></span>
+	  <span class="icon-bar"></span>
+	  <span class="icon-bar"></span>
+	</button>
+	<a class="navbar-brand" href="/pastegraph/">pastegraph</a>
+   </div>
+   <div id="navbar" class="collapse navbar-collapse">
+	<ul class="nav navbar-nav navbar-right">
+	  <li class="active"><a href="/pastegraph/"><b>Home</b></a></li>
+	  <li><a href="/pastegraph/about"><b>About</b></a></li>
+	  <li><a href="/pastegraph/contact"><b>Contact</b></a></li>
+	</ul>
+   </div><!--/.nav-collapse -->
+ </div>
+</nav>
+
+<div class="container">
+	<div id="dialog">
+		Enter new node title:
+		<input id="editInput" type="text" />
+		<button id="editInputSubmit">Enter</button>
+	</div>
+	<div class="main-text">
+	   <h3 id="title-text"><br></h3>
+	</div>
+	<div id="options1">
+		<form class="form-horizontal">
+		<div class="form-group" id="layoutButtons">	
+			<input class="btn btn-primary" id="freeform" type="button" value="Freeform">
+			<input class="btn btn-default" id="hierarchicalLR" type="button" value="Hierarchical (LR)">
+			<input class="btn btn-default" id="hierarchicalUD" type="button" value="Hierarchical (TD)">
+		</div>
+		</form>
+	</div>
+	<div id="mynetwork"></div>
+	<div class="row" id="options2">
+		<br>
+		<div class="col-md-8">
+			<form class="form-horizontal">
+			<div class="form-group">
+				<label for="pasteExpiration" class="col-sm-2 control-label">Expiration:</label>	
+				<div class="col-sm-10">
+					<select id="pasteExpiration" class="form-control">
+						<option selected="selected">Never</option>
+						<option>10 minutes</option>
+						<option>20 minutes</option>
+						<option>1 hour</option>
+						<option>1 day</option>
+					</select>	
+				</div>	
+			</div>
+			<div class="form-group">
+				<label for="pasteExposure" class="col-sm-2 control-label">Exposure:</label>	
+				<div class="col-sm-10">
+					<select id="pasteExposure" class="form-control">
+						<option selected="selected">Private</option>
+						<option disabled>Public (Coming soon!)</option>
+					</select>
+				</div>
+			</div>
+			<div class="form-group">
+				<label for="pasteTitle" class="col-sm-2 control-label">Title:</label>	
+				<div class="col-sm-10">
+      				<input type="text" class="form-control" maxlength="30" id="pasteTitle" placeholder="Title">
+    				</div>
+			</div>
+			</form>
+		</div><!-- end col-md-4 -->	
+		<div class="col-md-4" id="submitDiv">
+			<div class="g-recaptcha" data-sitekey="6LeL2xMTAAAAADr1UQJR7ymASNDzuoS-x5kWbMaS" data-callback="verifyRecaptcha"></div>	
+			<div class="form-group" id="pasteSubmitDiv">	
+				<input class="btn btn-primary" id="pasteSubmit" type="button" value="Create New Paste!">
+			</div>
+		</div>
+	</div><!-- end row -->
+</div> <!-- end container div -->
+<div id="footer">
+<hr>
+Alex Foster 2015 - <a href="http://www.0xadf.com">www.0xadf.com</a>
+</div>
+</div><!-- /.container -->
+</body>
+</html>
