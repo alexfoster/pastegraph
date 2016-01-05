@@ -295,7 +295,7 @@
 		return fullString;
 	}
 	
-	// called whenever an uncaught error occurs. NOT WORKING, GO LEARN ABOUT POSTFIX/SENDMAIL CONFIG
+	// called whenever an uncaught error occurs. 
 	var mailAdmin = function(msg, url, line, col, error){
 		var extra = !col ? '' : '\ncolumn: ' + col;
 		extra += !error ? '' : '\nerror: ' + error;
