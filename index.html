@@ -11,9 +11,9 @@
 
 <!-- ALWAYS USE CDN SRC -->
 
-<link rel="icon" type="image/png" href="http://www.0xadf.com/pastegraph/img/02-512.png">
+<link rel="icon" type="image/png" href="https://www.0xadf.com/pastegraph/img/02-512.png">
 <!-- visjs, jquery -->
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.2.0/vis.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.2.0/vis.min.js" async></script>
 <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.2.0/vis.min.css" rel="stylesheet" type="text/css" />
 
@@ -26,13 +26,101 @@
 <script src="https://code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
 
 <!-- my css -->
-<link rel="stylesheet" type="text/css" href="http://www.0xadf.com/pastegraph/css/pastestyle.css" />
+<link rel="stylesheet" type="text/css" href="https://www.0xadf.com/pastegraph/css/pastestyle.css" />
 
 <!-- recaptcha -->
-<script src='//www.google.com/recaptcha/api.js'></script>
+<script src='https://www.google.com/recaptcha/api.js' async defer></script>
 
 </head>
 <body>
+<nav class="navbar navbar-inverse">
+ <div class="container custom-width">
+   <div class="navbar-header">
+	<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+	  <span class="sr-only">Toggle navigation</span>
+	  <span class="icon-bar"></span>
+	  <span class="icon-bar"></span>
+	  <span class="icon-bar"></span>
+	</button>
+	<a class="navbar-brand" href="/pastegraph/">pastegraph</a>
+   </div>
+   <div id="navbar" class="collapse navbar-collapse">
+	<ul class="nav navbar-nav navbar-right">
+	  <li class="active"><a href="/pastegraph/"><b>Home</b></a></li>
+	  <li><a href="/pastegraph/about"><b>About</b></a></li>
+	  <li><a href="/pastegraph/contact"><b>Contact</b></a></li>
+	</ul>
+   </div><!--/.nav-collapse -->
+ </div>
+</nav>
+
+<div class="container">
+	<div id="dialog" style="display: none">
+		Enter new node title:
+		<input id="editInput" type="text" />
+		<button id="editInputSubmit">Enter</button>
+	</div>
+	<div class="main-text">
+	   <h3 id="title-text"><br></h3>
+	</div>
+	<div id="options1">
+		<form class="form-horizontal">
+		<div class="form-group" id="layoutButtons">	
+			<input class="btn btn-primary" id="freeform" type="button" value="Freeform">
+			<input class="btn btn-default" id="hierarchicalLR" type="button" value="Hierarchical (LR)">
+			<input class="btn btn-default" id="hierarchicalUD" type="button" value="Hierarchical (TD)">
+		</div>
+		</form>
+	</div>
+	<div id="mynetwork"></div>
+	<div class="row" id="options2">
+		<br>
+		<div class="col-md-8">
+			<form class="form-horizontal">
+			<div class="form-group">
+				<label for="pasteExpiration" class="col-sm-2 control-label">Expiration:</label>	
+				<div class="col-sm-10">
+					<select id="pasteExpiration" class="form-control">
+						<option selected="selected">Never</option>
+						<option>10 minutes</option>
+						<option>20 minutes</option>
+						<option>1 hour</option>
+						<option>1 day</option>
+					</select>	
+				</div>	
+			</div>
+			<div class="form-group">
+				<label for="pasteExposure" class="col-sm-2 control-label">Exposure:</label>	
+				<div class="col-sm-10">
+					<select id="pasteExposure" class="form-control">
+						<option selected="selected">Private</option>
+						<option disabled>Public (Coming soon!)</option>
+					</select>
+				</div>
+			</div>
+			<div class="form-group">
+				<label for="pasteTitle" class="col-sm-2 control-label">Title:</label>	
+				<div class="col-sm-10">
+      				<input type="text" class="form-control" maxlength="30" id="pasteTitle" placeholder="Title">
+    				</div>
+			</div>
+			</form>
+		</div><!-- end col-md-4 -->	
+		<div class="col-md-4" id="submitDiv">
+			<div class="g-recaptcha" data-sitekey="6LeL2xMTAAAAADr1UQJR7ymASNDzuoS-x5kWbMaS" data-callback="verifyRecaptcha"></div>
+			<div class="form-group" id="pasteSubmitDiv">	
+				<input class="btn btn-primary" id="pasteSubmit" type="button" value="Create New Paste!">
+			</div>
+		</div>
+	</div><!-- end row -->
+</div> <!-- end container div -->
+<div id="footer">
+<hr>
+Alex Foster 2015 - <a href="https://www.0xadf.com">www.0xadf.com</a>
+</div>
+</div><!-- /.container -->
+
+
 <script type="text/javascript">
 	var nodeDataSet;	// in-memory store of nodes
 	var edgeDataSet;	// in-memory store of edges
@@ -88,7 +176,7 @@
 		var optionsObject = {hierarchy: hierarchy, exposure: exposure, expiration: expiration, title: title, captcha: captchaString};
 		var dataObject = {nodes: nodeDataSet._data, edges: edgeDataSet._data, options: optionsObject};
 		$.ajax({
-			url: 'http://www.0xadf.com/dataSave.php',
+			url: 'https://www.0xadf.com/dataSave.php',
 			data: dataObject, 
 			dataType: 'text',
 			method: 'POST',
@@ -116,7 +204,7 @@
 
 		var dataObject = {id: pasteId};
 		$.ajax({
-			url: 'http://www.0xadf.com/dataLoad.php',
+			url: 'https://www.0xadf.com/dataLoad.php',
 			data: dataObject, 
 			dataType: 'json',
 			method: 'POST',
@@ -302,7 +390,7 @@
 		var message = "Error: "+msg+"\nurl: "+url+"\nline: "+line+extra;
 		var errorMessage = {message: message};
 		$.ajax({
-			url: 'http://www.0xadf.com/mailAdmin.php',
+			url: 'https://www.0xadf.com/mailAdmin.php',
 			data: errorMessage,
 			dataType: 'html',
 			method: 'POST',
@@ -319,8 +407,8 @@
 	var verifyRecaptcha = function(g_recaptcha_response){
 		captchaString = g_recaptcha_response;	
 	}
-	
-	$(document).ready(function(){
+	//when everything is loaded...
+	$(window).load(function(){
 		var LRButton = document.getElementById("hierarchicalLR");
 		var TDButton = document.getElementById("hierarchicalUD");
 		var freeFormButton = document.getElementById("freeform");
@@ -375,6 +463,7 @@
 				editCallback(nodeDataGlobal);
 		    }
 		});
+
 		$("#pasteSubmit").click(function() {
 			if(typeof captchaString !== 'undefined' && captchaString.length > 0){
 				saveNetwork();
@@ -394,94 +483,9 @@
 		else{
 			defaultNetwork();
 		}
+
 	});
 </script>
 
-<nav class="navbar navbar-inverse">
- <div class="container custom-width">
-   <div class="navbar-header">
-	<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-	  <span class="sr-only">Toggle navigation</span>
-	  <span class="icon-bar"></span>
-	  <span class="icon-bar"></span>
-	  <span class="icon-bar"></span>
-	</button>
-	<a class="navbar-brand" href="/pastegraph/">pastegraph</a>
-   </div>
-   <div id="navbar" class="collapse navbar-collapse">
-	<ul class="nav navbar-nav navbar-right">
-	  <li class="active"><a href="/pastegraph/"><b>Home</b></a></li>
-	  <li><a href="/pastegraph/about"><b>About</b></a></li>
-	  <li><a href="/pastegraph/contact"><b>Contact</b></a></li>
-	</ul>
-   </div><!--/.nav-collapse -->
- </div>
-</nav>
-
-<div class="container">
-	<div id="dialog">
-		Enter new node title:
-		<input id="editInput" type="text" />
-		<button id="editInputSubmit">Enter</button>
-	</div>
-	<div class="main-text">
-	   <h3 id="title-text"><br></h3>
-	</div>
-	<div id="options1">
-		<form class="form-horizontal">
-		<div class="form-group" id="layoutButtons">	
-			<input class="btn btn-primary" id="freeform" type="button" value="Freeform">
-			<input class="btn btn-default" id="hierarchicalLR" type="button" value="Hierarchical (LR)">
-			<input class="btn btn-default" id="hierarchicalUD" type="button" value="Hierarchical (TD)">
-		</div>
-		</form>
-	</div>
-	<div id="mynetwork"></div>
-	<div class="row" id="options2">
-		<br>
-		<div class="col-md-8">
-			<form class="form-horizontal">
-			<div class="form-group">
-				<label for="pasteExpiration" class="col-sm-2 control-label">Expiration:</label>	
-				<div class="col-sm-10">
-					<select id="pasteExpiration" class="form-control">
-						<option selected="selected">Never</option>
-						<option>10 minutes</option>
-						<option>20 minutes</option>
-						<option>1 hour</option>
-						<option>1 day</option>
-					</select>	
-				</div>	
-			</div>
-			<div class="form-group">
-				<label for="pasteExposure" class="col-sm-2 control-label">Exposure:</label>	
-				<div class="col-sm-10">
-					<select id="pasteExposure" class="form-control">
-						<option selected="selected">Private</option>
-						<option disabled>Public (Coming soon!)</option>
-					</select>
-				</div>
-			</div>
-			<div class="form-group">
-				<label for="pasteTitle" class="col-sm-2 control-label">Title:</label>	
-				<div class="col-sm-10">
-      				<input type="text" class="form-control" maxlength="30" id="pasteTitle" placeholder="Title">
-    				</div>
-			</div>
-			</form>
-		</div><!-- end col-md-4 -->	
-		<div class="col-md-4" id="submitDiv">
-			<div class="g-recaptcha" data-sitekey="6LeL2xMTAAAAADr1UQJR7ymASNDzuoS-x5kWbMaS" data-callback="verifyRecaptcha"></div>	
-			<div class="form-group" id="pasteSubmitDiv">	
-				<input class="btn btn-primary" id="pasteSubmit" type="button" value="Create New Paste!">
-			</div>
-		</div>
-	</div><!-- end row -->
-</div> <!-- end container div -->
-<div id="footer">
-<hr>
-Alex Foster 2015 - <a href="http://www.0xadf.com">www.0xadf.com</a>
-</div>
-</div><!-- /.container -->
 </body>
 </html>
