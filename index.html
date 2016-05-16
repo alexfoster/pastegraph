@@ -109,7 +109,7 @@
 		<div class="col-md-4" id="submitDiv">
 			<div class="g-recaptcha" data-sitekey="6LeL2xMTAAAAADr1UQJR7ymASNDzuoS-x5kWbMaS" data-callback="verifyRecaptcha"></div>
 			<div class="form-group" id="pasteSubmitDiv">	
-				<input class="btn btn-primary" id="pasteSubmit" type="button" value="Create New Paste!">
+				<input class="btn btn-primary" id="pasteSubmit" type="button" disabled="disabled" value="Create New Paste!">
 			</div>
 		</div>
 	</div><!-- end row -->
@@ -136,10 +136,10 @@ Alex Foster 2015 - <a href="https://www.0xadf.com">www.0xadf.com</a>
 		$("#title-text").text("Create a graph visualization and share!");
 		dataSetOptions = {fieldId: "id"};
 		nodeDataSet = new vis.DataSet(dataSetOptions);
-		nodeDataSet.add([{id: 'ajdfakjdf', label: 'Node 1'}]);
-		nodeDataSet.add([{id: 'fdjakfa', label: 'Node 2'}]);
+		nodeDataSet.add([{id: 'initialNodeId1', label: 'Node 1'}]);		// preseed graph with some initial nodes
+		nodeDataSet.add([{id: 'initialNodeId2', label: 'Node 2'}]);
 		edgeDataSet = new vis.DataSet();
-		edgeDataSet.add([{from: 'ajdfakjdf', to: 'fdjakfa'}]);
+		edgeDataSet.add([{from: 'initialNodeId1', to: 'initialNodeId2'}]);
 		createNetwork(false, "UD");		
 	}
 	
@@ -218,7 +218,7 @@ Alex Foster 2015 - <a href="https://www.0xadf.com">www.0xadf.com</a>
 				var expiration = "Never";
 				var exposure = "Private";
 				var title = "Untitled";
-				for(var i=0; i<ajaxData.length; i++){
+				for(var i=0; i<ajaxData.length; i++){					// contains nodes, edges, options
 					console.log(ajaxData[i].id + ", "+ajaxData[i].type+", "+ajaxData[i].nodeName+", "+
 							ajaxData[i].fromNode + ", "+ajaxData[i].toNode.trim()+"\n");
 					if(ajaxData[i].type == "node"){
@@ -254,10 +254,10 @@ Alex Foster 2015 - <a href="https://www.0xadf.com">www.0xadf.com</a>
 				else if(hierarchy == "freeform"){
 					hierarchical = false;
 				}
-				$("#pasteExposure option").filter(function(){
+				$("#pasteExposure option").filter(function(){		// updates exposure select box from database data
 					return $(this).text() == exposure;
 				}).prop('selected', true);
-				$("#pasteExpiration option").filter(function(){
+				$("#pasteExpiration option").filter(function(){		// updates expiration select box from database data
 					return $(this).text() == expiration;
 				}).prop('selected', true);
 				$("#pasteTitle").val(title);		
@@ -405,7 +405,8 @@ Alex Foster 2015 - <a href="https://www.0xadf.com">www.0xadf.com</a>
 
 	// save recaptcha client response to global
 	var verifyRecaptcha = function(g_recaptcha_response){
-		captchaString = g_recaptcha_response;	
+		captchaString = g_recaptcha_response;
+		$("#pasteSubmit").prop('disabled', false);
 	}
 	//when everything is loaded...
 	$(window).load(function(){
@@ -438,17 +439,16 @@ Alex Foster 2015 - <a href="https://www.0xadf.com">www.0xadf.com</a>
 		}
 		$('html').keyup(function(e){
 			if(network != null){
-				if(e.keyCode == 13){
-					
+				if(e.keyCode == 13){			// enter key
 					$("#editInputSubmit").click();
 				}
 				else if(e.keyCode == 46) {		// delete key
 					network.deleteSelected();
 				}
-				else if(e.keyCode == 107) {	// + key
+				else if(e.keyCode == 107) {		// + key
 					network.addNodeMode();
 				}
-				else if(e.keyCode == 106) {	// * key
+				else if(e.keyCode == 106) {		// * key
 					network.editNode();
 				}
 			}
@@ -467,9 +467,6 @@ Alex Foster 2015 - <a href="https://www.0xadf.com">www.0xadf.com</a>
 		$("#pasteSubmit").click(function() {
 			if(typeof captchaString !== 'undefined' && captchaString.length > 0){
 				saveNetwork();
-			}
-			else{
-				//hint
 			}
 		});
 		// parse url
